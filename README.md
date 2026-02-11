@@ -1,1 +1,1 @@
-merge pngs easily, just load and download them.
+a few online tools that might be helpful
