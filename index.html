@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tools</title>
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #f8f9fa;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+      padding: 2rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 220px;
+      padding: 14px 24px;
+      font-size: 1.05rem;
+      font-weight: 500;
+      color: #222;
+      background: white;
+      border: 1px solid #d0d4d8;
+      border-radius: 12px;
+      text-decoration: none;
+      transition: all 0.22s ease;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+
+    .btn:hover {
+      color: #000;
+      border-color: #a0a8b0;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <a href="/mergePng/index.html" class="btn">Merge PNG Images</a>
+    <a href="/svgTool/index.html" class="btn">SVG Tool</a>
+  </div>
+
+</body>
+</html>
