@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PNG Layer Merger</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #0f0f11;
+      color: #e0e0e0;
+      padding: 20px;
+      text-align: center;
+    }
+    h1 { color: #a5d8ff; margin-bottom: 8px; }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    #drop-zone {
+      border: 3px dashed #444;
+      border-radius: 12px;
+      padding: 40px;
+      margin: 20px auto;
+      background: #1a1a1e;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+    #drop-zone:hover, #drop-zone.dragover {
+      border-color: #60a5fa;
+      background: #222226;
+    }
+    #file-list {
+      margin: 20px 0;
+      color: #aaa;
+      font-size: 0.95em;
+    }
+    #preview {
+      background: 
+        linear-gradient(45deg, #222 25%, transparent 25%) 0 0 / 40px 40px,
+        linear-gradient(45deg, transparent 75%, #222 75%) 20px 20px / 40px 40px,
+        #333;
+      border: 1px solid #444;
+      border-radius: 8px;
+      margin: 20px auto;
+      max-width: 100%;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    }
+    button {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      padding: 12px 28px;
+      font-size: 1.1rem;
+      border-radius: 8px;
+      margin: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    button:hover { background: #60a5fa; transform: translateY(-1px); }
+    button:disabled {
+      background: #444;
+      cursor: not-allowed;
+    }
+    #controls { margin: 20px 0; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>PNG Layer Merger</h1>
+  <p>Drop or select multiple transparent PNGs → see preview → download merged result</p>
+
+  <div id="drop-zone">Drop PNG files here<br>or click to select</div>
+  <input type="file" id="file-input" multiple accept="image/png" style="display:none">
+
+  <div id="file-list"></div>
+
+  <div id="controls">
+    <button id="clearBtn" disabled>Clear All</button>
+    <button id="downloadBtn" disabled>Download Merged PNG</button>
+  </div>
+
+  <canvas id="preview" width="800" height="600"></canvas>
+</div>
+
+<script>
+// ────────────────────────────────────────────────
+const dropZone   = document.getElementById('drop-zone');
+const fileInput  = document.getElementById('file-input');
+const fileListEl = document.getElementById('file-list');
+const preview    = document.getElementById('preview');
+const ctx        = preview.getContext('2d');
+const clearBtn   = document.getElementById('clearBtn');
+const downloadBtn= document.getElementById('downloadBtn');
+
+let images = []; // {name, img: Image}
+
+function resizeCanvasToFit() {
+  if (images.length === 0) {
+    preview.width = 800;
+    preview.height = 600;
+    return;
+  }
+
+  let maxW = 0, maxH = 0;
+  images.forEach(o => {
+    maxW = Math.max(maxW, o.img.width);
+    maxH = Math.max(maxH, o.img.height);
+  });
+
+  // reasonable limit
+  maxW = Math.min(maxW, 4000);
+  maxH = Math.min(maxH, 4000);
+
+  preview.width = maxW;
+  preview.height = maxH;
+}
+
+function redraw() {
+  ctx.clearRect(0, 0, preview.width, preview.height);
+
+  images.forEach(o => {
+    if (o.img.complete) {
+      ctx.drawImage(o.img, 0, 0, preview.width, preview.height);
+    }
+  });
+
+  downloadBtn.disabled = images.length === 0;
+  clearBtn.disabled   = images.length === 0;
+}
+
+function addImage(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      images.push({name: file.name, img});
+      fileListEl.textContent = `Loaded ${images.length} image${images.length===1?'':'s'}`;
+      resizeCanvasToFit();
+      redraw();
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function handleFiles(files) {
+  for (const file of files) {
+    if (file.type === 'image/png') {
+      addImage(file);
+    }
+  }
+}
+
+// ─── Events ────────────────────────────────────────
+dropZone.addEventListener('click', () => fileInput.click());
+
+dropZone.addEventListener('dragover', e => {
+  e.preventDefault();
+  dropZone.classList.add('dragover');
+});
+
+dropZone.addEventListener('dragleave', () => {
+  dropZone.classList.remove('dragover');
+});
+
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  handleFiles(e.dataTransfer.files);
+});
+
+fileInput.addEventListener('change', e => {
+  handleFiles(e.target.files);
+});
+
+clearBtn.addEventListener('click', () => {
+  images = [];
+  fileListEl.textContent = '';
+  ctx.clearRect(0, 0, preview.width, preview.height);
+  resizeCanvasToFit();
+  redraw();
+});
+
+downloadBtn.addEventListener('click', () => {
+  if (images.length === 0) return;
+
+  const link = document.createElement('a');
+  link.download = `merged_${images.length}_layers.png`;
+  link.href = preview.toDataURL('image/png');
+  link.click();
+});
+
+</script>
+</body>
+</html>
