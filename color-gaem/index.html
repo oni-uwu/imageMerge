@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Memory Game</title>
+    <style>
+        #colorSquare {
+            width: 600px;
+            height: 600px;
+            border: 1px solid black;
+            display: none;
+        }
+        #picker {
+            display: none;
+        }
+        #preview {
+            width: 100px;
+            height: 100px;
+            border: 1px solid black;
+            margin: 10px 0;
+        }
+        #hueSquare {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <button id="start">Start</button>
+    <div id="colorSquare"></div>
+    <div id="picker">
+        <canvas id="hueSquare" width="300" height="300"></canvas>
+        <div>
+            Saturation: <input type="range" id="satSlider" min="0" max="100" value="100">
+        </div>
+        <div>
+            Value: <input type="range" id="valSlider" min="0" max="100" value="100">
+        </div>
+        <div>Selected Color:</div>
+        <div id="preview"></div>
+        <button id="confirm">Confirm</button>
+    </div>
+    <button id="restart" style="display: none;">Restart</button>
+    <div id="result"></div>
+
+    <script>
+        // HSV to RGB conversion
+        function hsvToRgb(h, s, v) {
+            s /= 100;
+            v /= 100;
+            let r, g, b;
+            const i = Math.floor(h / 60);
+            const f = h / 60 - i;
+            const p = v * (1 - s);
+            const q = v * (1 - f * s);
+            const t = v * (1 - (1 - f) * s);
+            switch (i % 6) {
+                case 0: r = v, g = t, b = p; break;
+                case 1: r = q, g = v, b = p; break;
+                case 2: r = p, g = v, b = t; break;
+                case 3: r = p, g = q, b = v; break;
+                case 4: r = t, g = p, b = v; break;
+                case 5: r = v, g = p, b = q; break;
+            }
+            return {r: Math.round(r * 255), g: Math.round(g * 255), b: Math.round(b * 255)};
+        }
+
+        // Calculate Euclidean distance in RGB space
+        function colorDistance(c1, c2) {
+            return Math.sqrt(
+                Math.pow(c1.r - c2.r, 2) +
+                Math.pow(c1.g - c2.g, 2) +
+                Math.pow(c1.b - c2.b, 2)
+            );
+        }
+
+        let originalColor;
+        let currentH = 0, currentS = 100, currentV = 100;
+
+        // Draw the hue square (horizontal gradient, vertical uniform)
+        function drawHueSquare() {
+            const canvas = document.getElementById('hueSquare');
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+            for (let x = 0; x < width; x++) {
+                let h = (x / width) * 360;
+                let rgb = hsvToRgb(h, 100, 100);
+                ctx.fillStyle = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
+                ctx.fillRect(x, 0, 1, height);
+            }
+        }
+
+        // Update the preview div with current color
+        function updatePreview() {
+            let rgb = hsvToRgb(currentH, currentS, currentV);
+            document.getElementById('preview').style.backgroundColor = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', () => {
+            drawHueSquare();
+            updatePreview();
+        });
+
+        // Handle click on hue square to select hue
+        document.getElementById('hueSquare').addEventListener('click', (e) => {
+            const rect = e.target.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            currentH = (x / e.target.width) * 360;
+            updatePreview();
+        });
+
+        // Handle saturation slider
+        document.getElementById('satSlider').addEventListener('input', (e) => {
+            currentS = parseInt(e.target.value);
+            updatePreview();
+        });
+
+        // Handle value slider
+        document.getElementById('valSlider').addEventListener('input', (e) => {
+            currentV = parseInt(e.target.value);
+            updatePreview();
+        });
+
+        // Start button logic
+        document.getElementById('start').addEventListener('click', () => {
+            document.getElementById('start').style.display = 'none';
+            document.getElementById('restart').style.display = 'none';
+            document.getElementById('result').innerHTML = '';
+
+            // Generate random HSV
+            let h = Math.random() * 360;
+            let s = Math.random() * 100;
+            let v = Math.random() * 100;
+            originalColor = hsvToRgb(h, s, v);
+
+            // Show the color square
+            const colorSquare = document.getElementById('colorSquare');
+            colorSquare.style.backgroundColor = `rgb(${originalColor.r}, ${originalColor.g}, ${originalColor.b})`;
+            colorSquare.style.display = 'block';
+            document.getElementById('picker').style.display = 'none';
+
+            // Hide after 8 seconds and show picker
+            setTimeout(() => {
+                colorSquare.style.display = 'none';
+                document.getElementById('picker').style.display = 'block';
+
+                // Reset picker to default
+                currentH = 0;
+                currentS = 100;
+                currentV = 100;
+                document.getElementById('satSlider').value = 100;
+                document.getElementById('valSlider').value = 100;
+                updatePreview();
+            }, 8000);
+        });
+
+        // Confirm button logic
+        document.getElementById('confirm').addEventListener('click', () => {
+            let selectedColor = hsvToRgb(currentH, currentS, currentV);
+            let dist = colorDistance(originalColor, selectedColor);
+            let maxDist = Math.sqrt(3 * 255 * 255);
+            let closeness = (1 - (dist / maxDist)) * 100;
+
+            document.getElementById('result').innerHTML = `Closeness: ${closeness.toFixed(2)}%`;
+            document.getElementById('picker').style.display = 'none';
+            document.getElementById('restart').style.display = 'block';
+        });
+
+        // Restart button logic
+        document.getElementById('restart').addEventListener('click', () => {
+            document.getElementById('start').style.display = 'block';
+            document.getElementById('restart').style.display = 'none';
+            document.getElementById('colorSquare').style.display = 'none';
+            document.getElementById('result').innerHTML = '';
+        });
+    </script>
+</body>
+</html>
